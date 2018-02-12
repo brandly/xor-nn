@@ -1,4 +1,4 @@
-var { range, sum, reverse } = require('lodash')
+var { last, range, sum, reverse, zip } = require('lodash')
 
 function buildLayer (inputs, neurons) {
   return range(0, neurons).map(n => ({
@@ -105,12 +105,55 @@ const data = [
   [[1, 1], [0]]
 ]
 
-const hiddenNodes = 5
-const network = buildNetwork(data[0][0].length, hiddenNodes, data[0][1].length)
-train(network, data, 0.5, 10000)
-console.log(JSON.stringify(network, null, 2))
+class Network {
+  constructor (sizes) {
+    this.sizes = sizes
+    // TODO:
+    // this.biases
+    this.weights =
+      zip(sizes.slice(0, sizes.length - 1), sizes.slice(1)).map(
+        // making a input x nodes matrix of random weights
+        ([input, nodes]) => range(nodes).map(() =>
+          range(input).map(() => Math.random())
+        )
+      )
+  }
 
-data.forEach(([input, ideal]) => {
-  const real = forwardPropagate(network, input)
-  console.log(`input ${input}, expected ${ideal}, real ${real.map(n => Math.round(n))} (${real})`)
-})
+  getActivations (input) {
+    const activations = []
+    this.weights.forEach(layer => {
+      const nextInput = []
+
+      layer.forEach(neuronWeights => {
+        const activation = activate(neuronWeights, input)
+        const output = sigmoid(activation)
+        nextInput.push(output)
+      })
+
+      activations.push(nextInput)
+      input = nextInput
+    })
+    return activations
+  }
+
+  feedforward (input) {
+    return last(this.getActivations(input))
+  }
+
+  // backprop ()
+}
+
+const hiddenNodes = 5
+const net = new Network([data[0][0].length, hiddenNodes, data[0][1].length])
+console.log(JSON.stringify(net, null, 2))
+console.log(JSON.stringify(net.feedforward(data[0][0]), null, 2))
+// net.train(data, 0.5, 10000)
+
+const network = buildNetwork(data[0][0].length, hiddenNodes, data[0][1].length)
+// train(network, data, 0.5, 10000)
+// console.log(JSON.stringify(network, null, 2))
+
+// data.forEach(([input, ideal]) => {
+//   const real = network.forwardPropagate(input)
+//   console.log(`input ${input}, expected ${ideal}, real ${real.map(n => Math.round(n))} (${real})`)
+// })
