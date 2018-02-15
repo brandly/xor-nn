@@ -1,6 +1,7 @@
 var { last, range, sum, reverse, zip } = require('lodash')
 
 function buildLayer (inputs, neurons) {
+  // TODO: add biases
   return range(0, neurons).map(n => ({
     weights: range(0, inputs).map(_ => Math.random())
   }))
@@ -17,6 +18,7 @@ function activate (weights, inputs) {
   return sum(weights.map((_, i) => weights[i] * inputs[i]))
 }
 
+// TODO: once we generalize with activation, make it easy to substitute for ReLU/tanh
 function sigmoid (n) {
   return 1 / (1 + Math.exp(-n))
 }
@@ -48,9 +50,11 @@ function backPropagateError (network, ideal) {
         errors.push(ideal[j] - neuron.output)
       })
     } else {
+      // TODO: generalize dotproduct function
       layer.forEach((_, j) => {
         let error = 0
         backwards[i - 1].forEach((neuron, k) => {
+          // summing up gradients from downstream neurons
           error += (neuron.weights[j] * neuron.delta)
         })
         errors.push(error)
@@ -58,6 +62,9 @@ function backPropagateError (network, ideal) {
     }
 
     layer.forEach((neuron, j) => {
+      // chain rule
+      // our sigmoidDerivative definition is sorta wrong.
+      // to be more correct, we'd have to track neuron.activation as well
       neuron.delta = errors[j] * sigmoidDerivative(neuron.output)
     })
   })
@@ -140,8 +147,14 @@ class Network {
     return last(this.getActivations(input))
   }
 
-  // backprop ()
+  backprop (input, output) {
+    const activations = this.getActivations(input)
+  }
 }
+
+// Could center design around the Layer, each represented by an array of weights/biases
+// tell each layer to forward/backward
+// then could implement different layer types
 
 const hiddenNodes = 5
 const net = new Network([data[0][0].length, hiddenNodes, data[0][1].length])
@@ -157,3 +170,5 @@ const network = buildNetwork(data[0][0].length, hiddenNodes, data[0][1].length)
 //   const real = network.forwardPropagate(input)
 //   console.log(`input ${input}, expected ${ideal}, real ${real.map(n => Math.round(n))} (${real})`)
 // })
+
+// TODO: write numerical gradient to do "gradient check" and confirm that our calculus is correct
